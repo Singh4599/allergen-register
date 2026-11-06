@@ -1,5 +1,5 @@
 // LV Spices — Allergen & Cross-Contamination Control Register
-// Main Application Controller & UI Logic
+// Exact UI & Functionality Controller matching reference design
 
 import { MASTER_PRODUCTS } from './products-master.js';
 import { getPreviousWorkingDate } from './generator.js';
@@ -15,6 +15,8 @@ const state = {
   currentDate: getTodayDateISO(),
   records: [],
   filteredRecords: [],
+  currentPage: 1,
+  pageSize: 10,
   unsubListener: null
 };
 
@@ -36,7 +38,7 @@ function getTodayDateISO() {
   return `${year}-${month}-${day}`;
 }
 
-function formatDateLong(dateStr) {
+function formatDateDisplay(dateStr) {
   const d = new Date(dateStr + 'T12:00:00Z');
   return d.toLocaleDateString('en-GB', {
     weekday: 'long',
@@ -60,16 +62,30 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 function initUI() {
-  const datePicker = document.getElementById('date-picker');
-  datePicker.value = state.currentDate;
+  const hiddenPicker = document.getElementById('date-picker-hidden');
+  const dateSelectorWrap = document.getElementById('date-selector-wrap');
+  if (hiddenPicker) hiddenPicker.value = state.currentDate;
 
-  // Date Navigation
-  datePicker.addEventListener('change', (e) => {
-    if (e.target.value) {
-      loadDate(e.target.value);
-    }
-  });
+  // Open native picker on click
+  if (dateSelectorWrap && hiddenPicker) {
+    dateSelectorWrap.addEventListener('click', (e) => {
+      if (e.target !== hiddenPicker) {
+        try {
+          hiddenPicker.showPicker();
+        } catch(err) {
+          hiddenPicker.focus();
+        }
+      }
+    });
 
+    hiddenPicker.addEventListener('change', (e) => {
+      if (e.target.value) {
+        loadDate(e.target.value);
+      }
+    });
+  }
+
+  // Prev / Next / Today
   document.getElementById('btn-prev-day').addEventListener('click', () => {
     const prevDate = getPreviousWorkingDate(state.currentDate);
     loadDate(prevDate);
@@ -90,9 +106,18 @@ function initUI() {
   });
 
   // Search & Filter
-  document.getElementById('search-input').addEventListener('input', applyFilters);
-  document.getElementById('filter-allergen').addEventListener('change', applyFilters);
-  document.getElementById('filter-checker').addEventListener('change', applyFilters);
+  document.getElementById('search-input').addEventListener('input', () => {
+    state.currentPage = 1;
+    applyFilters();
+  });
+  document.getElementById('filter-allergen').addEventListener('change', () => {
+    state.currentPage = 1;
+    applyFilters();
+  });
+  document.getElementById('filter-checker').addEventListener('change', () => {
+    state.currentPage = 1;
+    applyFilters();
+  });
 
   // Actions
   document.getElementById('btn-new-entry').addEventListener('click', () => openRecordModal());
@@ -100,13 +125,28 @@ function initUI() {
   document.getElementById('btn-export-excel').addEventListener('click', exportToExcel);
   document.getElementById('btn-save-record').addEventListener('click', handleSaveRecord);
 
-  // Setup modal autocomplete
+  // Pagination buttons
+  document.getElementById('prev-page-btn').addEventListener('click', () => {
+    if (state.currentPage > 1) {
+      state.currentPage--;
+      renderTable();
+    }
+  });
+
+  document.getElementById('next-page-btn').addEventListener('click', () => {
+    const maxPage = Math.ceil(state.filteredRecords.length / state.pageSize) || 1;
+    if (state.currentPage < maxPage) {
+      state.currentPage++;
+      renderTable();
+    }
+  });
+
+  // Autocomplete Setup
   setupProductAutocomplete('m-product-name', 'product-autocomplete', (prod) => {
     const [year, month] = state.currentDate.split('-');
     const mmyy = `${month}${year.slice(-2)}`;
     document.getElementById('m-batch-no').value = `${prod.code}-${mmyy}`;
     
-    // Set allergen info automatically based on product
     const allergenSelect = document.getElementById('m-has-allergen');
     const allergenSpec = document.getElementById('m-allergen-spec');
     if (prod.hasAllergen) {
@@ -124,38 +164,38 @@ function initUI() {
 // ── LOAD DATE & SUBSCRIBE TO FIRESTORE ──
 async function loadDate(dateStr) {
   state.currentDate = dateStr;
-  const datePicker = document.getElementById('date-picker');
-  if (datePicker) datePicker.value = dateStr;
+  state.currentPage = 1;
 
-  const dateBadge = document.getElementById('date-display-badge');
-  if (dateBadge) dateBadge.textContent = formatDateLong(dateStr);
+  const hiddenPicker = document.getElementById('date-picker-hidden');
+  if (hiddenPicker) hiddenPicker.value = dateStr;
 
-  // Unsubscribe previous Firestore listener if active
+  const dateText = document.getElementById('date-text-display');
+  if (dateText) dateText.textContent = formatDateDisplay(dateStr);
+
   if (state.unsubListener) {
     state.unsubListener();
     state.unsubListener = null;
   }
 
-  // Load records immediately
+  // Load records
   const initialRecords = await getRecordsForDate(dateStr);
   state.records = initialRecords;
   applyFilters();
 
-  // Setup real-time listener for this date
+  // Firestore live listener
   state.unsubListener = subscribeToDate(dateStr, (updatedRecords) => {
     state.records = updatedRecords;
     applyFilters();
   });
 }
 
-// ── FILTERING & RENDERING ──
+// ── FILTERING & PAGINATION ──
 function applyFilters() {
   const query = (document.getElementById('search-input')?.value || '').trim().toLowerCase();
   const allergenFilter = document.getElementById('filter-allergen')?.value || 'all';
   const checkerFilter = document.getElementById('filter-checker')?.value || 'all';
 
   state.filteredRecords = state.records.filter(r => {
-    // Search query
     if (query) {
       const matchName = (r.productName || '').toLowerCase().includes(query);
       const matchBatch = (r.batchNo || '').toLowerCase().includes(query);
@@ -164,69 +204,85 @@ function applyFilters() {
       if (!matchName && !matchBatch && !matchAllergen && !matchPrev) return false;
     }
 
-    // Allergen filter
     if (allergenFilter === 'yes' && !r.hasAllergen) return false;
     if (allergenFilter === 'no' && r.hasAllergen) return false;
 
-    // Checker filter
     if (checkerFilter !== 'all' && r.checkedBy !== checkerFilter) return false;
 
     return true;
   });
 
-  renderTable(state.filteredRecords);
-  updateStats(state.records);
+  renderTable();
 }
 
-function renderTable(records) {
+function renderTable() {
   const tbody = document.getElementById('register-tbody');
-  const countBadge = document.getElementById('table-record-count');
-  if (countBadge) countBadge.textContent = `${records.length} Records`;
+  const countBadge = document.getElementById('records-count-badge');
+  const paginationInfo = document.getElementById('pagination-info');
+  const curPageBox = document.getElementById('cur-page-num');
 
-  if (!records.length) {
+  const total = state.filteredRecords.length;
+  if (countBadge) countBadge.textContent = `${total} Records`;
+
+  if (!total) {
     tbody.innerHTML = `
       <tr>
-        <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 14px;">
+        <td colspan="9" style="text-align: center; padding: 40px; color: var(--text-muted); font-size: 13.5px;">
           No production records found for this date. Click <strong>+ New Record</strong> to log a batch.
         </td>
       </tr>
     `;
+    if (paginationInfo) paginationInfo.textContent = 'Showing 0-0 of 0 records';
+    if (curPageBox) curPageBox.textContent = '1';
     return;
   }
 
-  tbody.innerHTML = records.map((r, idx) => {
+  const maxPage = Math.ceil(total / state.pageSize) || 1;
+  if (state.currentPage > maxPage) state.currentPage = maxPage;
+
+  const startIdx = (state.currentPage - 1) * state.pageSize;
+  const endIdx = Math.min(startIdx + state.pageSize, total);
+  const pageRecords = state.filteredRecords.slice(startIdx, endIdx);
+
+  if (paginationInfo) {
+    paginationInfo.textContent = `Showing ${startIdx + 1}-${endIdx} of ${total} records`;
+  }
+  if (curPageBox) {
+    curPageBox.textContent = state.currentPage;
+  }
+
+  tbody.innerHTML = pageRecords.map(r => {
     const allergenHtml = r.hasAllergen
-      ? `<span class="allergen-badge-yes">⚠️ ${escapeHtml(r.allergenPresent)}</span>`
-      : `<span class="allergen-badge-no">✓ No</span>`;
+      ? `<span class="pill-allergen-yes">⚠️ ${escapeHtml(r.allergenPresent)}</span>`
+      : `<span class="pill-allergen-no">✓ No</span>`;
 
     return `
       <tr data-id="${escapeHtml(r.id)}">
-        <td class="td-center td-bold" style="color: var(--navy-primary);">${escapeHtml(r.date)}</td>
+        <td class="td-center td-date">${escapeHtml(r.date)}</td>
         <td>
-          <div class="product-name-cell">${escapeHtml(r.productName)}</div>
-          <div style="font-size: 11px; color: var(--text-muted);">${escapeHtml(r.category || 'Seasoning')}</div>
+          <div class="product-title">${escapeHtml(r.productName)}</div>
+          <div class="product-cat-sub">${escapeHtml(r.category || 'Seasoning')}</div>
         </td>
         <td class="td-center">
-          <span class="batch-code-badge">${escapeHtml(r.batchNo)}</span>
+          <span class="batch-badge">${escapeHtml(r.batchNo)}</span>
         </td>
-        <td>${allergenHtml}</td>
+        <td class="td-center">${allergenHtml}</td>
         <td>
-          <div style="font-weight: 600; color: var(--text-secondary); font-size: 12.5px;">${escapeHtml(r.previousProduct)}</div>
+          <span class="prev-product-text">${escapeHtml(r.previousProduct)}</span>
         </td>
         <td class="td-center">
-          <span class="pass-badge">✓ Yes</span>
+          <span class="pill-green-check">✓ Yes</span>
         </td>
         <td class="td-center">
-          <span class="pass-badge">✓ Pass</span>
+          <span class="pill-green-check">✓ Pass</span>
         </td>
         <td class="td-center">
-          <div class="sig-cell">${escapeHtml(r.checkedBy)}</div>
-          <span class="sig-name-print">(${escapeHtml(r.checkedBy)})</span>
+          <span class="signature-name">${escapeHtml(r.checkedBy)}</span>
         </td>
-        <td class="td-center no-print">
-          <div class="row-actions">
-            <button class="btn-icon" title="Edit Record" onclick="window.editRecord('${escapeHtml(r.id)}')">✏️</button>
-            <button class="btn-icon btn-delete" title="Delete Record" onclick="window.confirmDeleteRecord('${escapeHtml(r.id)}')">🗑️</button>
+        <td class="td-center">
+          <div class="action-buttons-wrap">
+            <button class="action-btn edit-btn" title="Edit" onclick="window.editRecord('${escapeHtml(r.id)}')">✏️</button>
+            <button class="action-btn delete-btn" title="Delete" onclick="window.confirmDeleteRecord('${escapeHtml(r.id)}')">🗑️</button>
           </div>
         </td>
       </tr>
@@ -234,46 +290,30 @@ function renderTable(records) {
   }).join('');
 }
 
-function updateStats(records) {
-  const total = records.length;
-  const allergenYes = records.filter(r => r.hasAllergen).length;
-  const allergenNo = total - allergenYes;
-  const allergenPct = total > 0 ? Math.round((allergenYes / total) * 100) : 0;
-
-  const checkers = [...new Set(records.map(r => r.checkedBy).filter(Boolean))];
-  const checkerDisplay = checkers.length > 0 ? checkers.join(' / ') : 'Vishal';
-
-  document.getElementById('stat-total-batches').textContent = total;
-  document.getElementById('stat-allergen-yes').textContent = allergenYes;
-  document.getElementById('stat-allergen-pct').textContent = `${allergenPct}% of total`;
-  document.getElementById('stat-allergen-no').textContent = allergenNo;
-  document.getElementById('stat-active-checker').textContent = checkerDisplay;
-}
-
-// ── PRINT REGISTER SHEET (MATCHES PHOTO EXACTLY) ──
+// ── PRINT REGISTER SHEET ──
 function printRegisterSheet() {
   const { month, year } = formatMonthYear(state.currentDate);
-  document.getElementById('print-month-val').textContent = month;
-  document.getElementById('print-year-val').textContent = year;
+  const mEl = document.getElementById('print-month-val');
+  const yEl = document.getElementById('print-year-val');
+  if (mEl) mEl.textContent = month;
+  if (yEl) yEl.textContent = year;
 
   const printTbody = document.getElementById('print-sheet-tbody');
   const records = state.filteredRecords;
 
-  // Build rows from records
   let rowsHtml = records.map(r => `
     <tr>
       <td class="td-center" style="font-weight: 700;">${escapeHtml(r.date)}</td>
       <td style="font-weight: 700;">${escapeHtml(r.productName)}</td>
       <td class="td-center" style="font-family: monospace; font-weight: 700;">${escapeHtml(r.batchNo)}</td>
       <td style="font-weight: 600; color: ${r.hasAllergen ? '#B91C1C' : '#047857'};">${escapeHtml(r.allergenPresent)}</td>
-      <td style="font-weight: 500;">${escapeHtml(r.previousProduct)}</td>
+      <td style="font-weight: 600;">${escapeHtml(r.previousProduct)}</td>
       <td class="td-center" style="font-weight: 700;">Yes</td>
       <td class="td-center" style="font-weight: 700; color: #047857;">Pass</td>
       <td class="td-center sig-cell">${escapeHtml(r.checkedBy)}</td>
     </tr>
   `).join('');
 
-  // If fewer than 10 rows, pad with empty rows to match physical register format
   const rowsNeeded = Math.max(0, 10 - records.length);
   for (let i = 0; i < rowsNeeded; i++) {
     rowsHtml += `
@@ -287,10 +327,10 @@ function printRegisterSheet() {
   window.print();
 }
 
-// ── EXPORT TO EXCEL ──
+// ── EXCEL EXPORT ──
 function exportToExcel() {
   if (typeof XLSX === 'undefined') {
-    showToast('SheetJS library is loading, please try again in a second', 'error');
+    showToast('SheetJS library is loading, please try again in a moment', 'error');
     return;
   }
 
@@ -299,7 +339,7 @@ function exportToExcel() {
     ['L V SPICES — ALLERGEN & CROSS-CONTAMINATION CONTROL REGISTER'],
     ['Daily Production & Packing Record — FSSAI & Quality Assurance Compliance'],
     [`Month: ${month}`, `Year: ${year}`, `Generated Date: ${state.currentDate}`],
-    [], // empty row
+    [],
     [
       'Date (DD/MM/YY)',
       'Product Name (Masala / Seasoning)',
@@ -326,17 +366,15 @@ function exportToExcel() {
   });
 
   const ws = XLSX.utils.aoa_to_sheet(rows);
-
-  // Column widths
   ws['!cols'] = [
-    { wch: 14 }, // Date
-    { wch: 38 }, // Product Name
-    { wch: 16 }, // Batch No
-    { wch: 35 }, // Allergen Present
-    { wch: 35 }, // Previous Product
-    { wch: 22 }, // Equipment Cleaned
-    { wch: 16 }, // Cross-Contamination
-    { wch: 16 }  // Checked By
+    { wch: 14 },
+    { wch: 38 },
+    { wch: 16 },
+    { wch: 35 },
+    { wch: 35 },
+    { wch: 22 },
+    { wch: 16 },
+    { wch: 16 }
   ];
 
   const wb = XLSX.utils.book_new();
@@ -347,7 +385,7 @@ function exportToExcel() {
   showToast(`✓ Exported ${fileName} successfully!`, 'success');
 }
 
-// ── MODAL: ADD / EDIT RECORD ──
+// ── MODAL: ADD / EDIT ──
 function openRecordModal(recordId = null) {
   const modal = document.getElementById('record-modal');
   const title = document.getElementById('modal-title');
@@ -364,7 +402,6 @@ function openRecordModal(recordId = null) {
     document.getElementById('m-product-name').value = r.productName;
     document.getElementById('m-has-allergen').value = r.hasAllergen ? 'yes' : 'no';
     
-    // Extract allergen spec
     const spec = r.allergenPresent.startsWith('Yes (') 
       ? r.allergenPresent.slice(5, -1) 
       : (r.hasAllergen ? r.allergenPresent.replace(/^Yes\s*[-:]?\s*/i, '') : '');
@@ -375,7 +412,6 @@ function openRecordModal(recordId = null) {
     document.getElementById('m-cross-check').value = r.crossContaminationCheck || 'Pass';
     document.getElementById('m-checked-by').value = r.checkedBy || 'Vishal';
   } else {
-    // New Record
     title.textContent = 'Add New Production Record';
     document.getElementById('m-record-id').value = '';
     document.getElementById('m-date').value = state.currentDate;
@@ -384,7 +420,6 @@ function openRecordModal(recordId = null) {
     document.getElementById('m-has-allergen').value = 'no';
     document.getElementById('m-allergen-spec').value = '';
     
-    // Set previous product to the last product of the day
     const lastProduct = state.records.length > 0 
       ? state.records[state.records.length - 1].productName 
       : 'JEERA POWDER';
@@ -405,7 +440,6 @@ window.confirmDeleteRecord = async function(recordId) {
   if (!confirm('Are you sure you want to delete this record from the register?')) return;
   await deleteRecord(recordId, state.currentDate);
   showToast('✓ Record deleted successfully', 'success');
-  // Refresh view
   loadDate(state.currentDate);
 };
 
@@ -504,7 +538,6 @@ function setupProductAutocomplete(inputId, dropdownId, onSelect = null) {
     });
   });
 
-  // Close dropdown on outside click
   document.addEventListener('click', (e) => {
     if (!input.contains(e.target) && !dropdown.contains(e.target)) {
       dropdown.style.display = 'none';
@@ -512,7 +545,6 @@ function setupProductAutocomplete(inputId, dropdownId, onSelect = null) {
   });
 }
 
-// ── TOAST HELPER ──
 function showToast(message, type = 'info') {
   const container = document.getElementById('toast-container');
   if (!container) return;
@@ -539,4 +571,3 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#39;');
 }
-

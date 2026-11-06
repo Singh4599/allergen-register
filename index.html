@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>L V Spices — Allergen & Cross-Contamination Control Register</title>
-  <meta name="description" content="L V Spices Allergen & Cross-Contamination Control Register — FSSAI & Quality Assurance Daily Production & Packing Record." />
+  <title>Allergen & Cross-Contamination Control Register — LV Spices</title>
+  <meta name="description" content="L V Spices Allergen & Cross-Contamination Control Register — Daily Production & Packing Record." />
   
   <!-- Fonts -->
   <link rel="preconnect" href="https://fonts.googleapis.com" />
@@ -14,155 +14,160 @@
   <!-- SheetJS for Excel Export -->
   <script src="https://cdn.sheetjs.com/xlsx-0.20.1/package/dist/xlsx.full.min.js"></script>
   
-  <link rel="icon" type="image/jpeg" href="assets/lv_spices_logo.jpg" />
+  <link rel="icon" type="image/jpeg" href="assets/lv-brand-logo.jpg" />
   <link rel="stylesheet" href="css/style.css" />
 </head>
 <body>
 
-  <!-- TOP HEADER -->
-  <header class="app-header">
-    <div class="brand-section">
-      <img src="assets/lv_spices_logo.jpg" alt="L V Spices Logo" class="brand-logo-img" />
-      <div class="brand-title-wrap">
-        <h1>
-          L V SPICES
-          <span class="header-status-pill">
-            <span class="pulse-dot"></span>
-            Cloud Synced
-          </span>
-        </h1>
-        <p>Allergen & Cross-Contamination Control Register — Daily Production & Packing Record</p>
+<div class="app-layout">
+  
+  <!-- ═══ SIDEBAR ═══ -->
+  <aside class="sidebar">
+    <div class="sidebar-header">
+      <div class="brand-crest-box">
+        <img src="assets/lv-brand-logo.jpg" alt="LV Logo" onerror="this.src='assets/lv_spices_logo.jpg'" />
       </div>
+      <div class="brand-title">LV SPICES</div>
     </div>
-    
-    <div class="header-actions">
-      <button class="btn btn-secondary" id="btn-export-excel" title="Download formatted Excel workbook">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="8" y1="13" x2="16" y2="13"></line><line x1="8" y1="17" x2="16" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-        Export Excel
-      </button>
-      <button class="btn btn-secondary" id="btn-print-sheet" title="Print FSSAI compliant A4 Register Sheet">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 6 2 18 2 18 9"></polyline><path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path><rect x="6" y="14" width="12" height="8"></rect></svg>
-        Print Register Sheet
-      </button>
-      <button class="btn btn-primary" id="btn-new-entry">
-        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="12" y1="5" x2="12" y2="19"></line><line x1="5" y1="12" x2="19" y2="12"></line></svg>
-        + New Record
-      </button>
-    </div>
-  </header>
 
-  <!-- MAIN CONTAINER -->
-  <main class="app-container">
+    <nav class="sidebar-nav">
+      <button class="nav-item-btn">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path>
+          <polyline points="3.27 6.96 12 12.01 20.73 6.96"></polyline>
+          <line x1="12" y1="22.08" x2="12" y2="12"></line>
+        </svg>
+        Allergen & Cross-Contamination
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <img src="assets/sidebar-spices.png" alt="Spices" class="sidebar-spices-img" onerror="this.style.display='none'" />
+    </div>
+  </aside>
+
+  <!-- ═══ MAIN CONTENT AREA ═══ -->
+  <main class="main-wrapper">
     
-    <!-- CONTROLS & DATE NAV -->
-    <div class="control-panel">
-      <div class="date-controls">
-        <button class="nav-arrow-btn" id="btn-prev-day" title="Previous Working Day">◀</button>
-        <button class="btn btn-secondary" id="btn-today" style="padding: 7px 12px; font-size: 12px;">Today</button>
-        <button class="nav-arrow-btn" id="btn-next-day" title="Next Working Day">▶</button>
-        <input type="date" id="date-picker" class="date-picker-input" min="2026-04-01" />
-        <div class="date-display-badge" id="date-display-badge">--</div>
+    <!-- Top Header -->
+    <header class="top-header">
+      <div class="header-title-box">
+        <h1>Allergen & Cross-Contamination Control Register</h1>
+        <p>Daily Allergen Monitoring • Cleaning Verification • Cross-Contamination Check</p>
       </div>
 
-      <div class="filter-controls">
-        <div class="search-input-wrap">
-          <span class="search-icon">🔍</span>
-          <input type="text" id="search-input" class="search-input" placeholder="Search product, batch, allergen..." />
-        </div>
+      <div class="header-actions">
+        <button class="btn btn-white" id="btn-export-excel" title="Download Excel Register">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+            <polyline points="7 10 12 15 17 10"></polyline>
+            <line x1="12" y1="15" x2="12" y2="3"></line>
+          </svg>
+          Export Excel
+        </button>
+
+        <button class="btn btn-white" id="btn-print-sheet" title="Print Register Sheet">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <polyline points="6 9 6 2 18 2 18 9"></polyline>
+            <path d="M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2"></path>
+            <rect x="6" y="14" width="12" height="8"></rect>
+          </svg>
+          Print Register
+        </button>
+
+        <button class="btn btn-burgundy" id="btn-new-entry">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+          New Record
+        </button>
+      </div>
+    </header>
+
+    <!-- Controls Toolbar -->
+    <section class="toolbar-strip">
+      <div class="toolbar-left">
+        <button class="btn-today" id="btn-today">Today</button>
+        <button class="nav-arrow-btn" id="btn-prev-day" title="Previous Day">‹</button>
+        <button class="nav-arrow-btn" id="btn-next-day" title="Next Day">›</button>
         
-        <select id="filter-allergen" class="filter-select">
+        <div class="date-selector-btn" id="date-selector-wrap">
+          <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+            <line x1="16" y1="2" x2="16" y2="6"></line>
+            <line x1="8" y1="2" x2="8" y2="6"></line>
+            <line x1="3" y1="10" x2="21" y2="10"></line>
+          </svg>
+          <span id="date-text-display">Saturday, 7 November 2026</span>
+          <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" style="color:#9CA3AF;">
+            <polyline points="6 9 12 15 18 9"></polyline>
+          </svg>
+          <input type="date" id="date-picker-hidden" class="native-date-hidden" min="2026-04-01" />
+        </div>
+      </div>
+
+      <div class="toolbar-right">
+        <div class="search-box">
+          <svg class="search-icon-svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="search-input" placeholder="Search product, batch, allergen..." />
+        </div>
+
+        <select id="filter-allergen" class="filter-dropdown">
           <option value="all">All Allergens (All Batches)</option>
           <option value="yes">Allergen Present (Yes)</option>
           <option value="no">Allergen Free (No)</option>
         </select>
 
-        <select id="filter-checker" class="filter-select">
+        <select id="filter-checker" class="filter-dropdown">
           <option value="all">All Checkers</option>
           <option value="Vishal">Vishal</option>
           <option value="Tejas">Tejas</option>
         </select>
       </div>
-    </div>
+    </section>
 
-    <!-- STATS CARDS -->
-    <div class="stats-grid">
-      <div class="stat-card">
-        <span class="stat-label">Total Batches Today</span>
-        <div class="stat-val-wrap">
-          <span class="stat-value" id="stat-total-batches">0</span>
-          <span class="stat-subtext">Production batches</span>
-        </div>
-      </div>
-
-      <div class="stat-card card-allergen-yes">
-        <span class="stat-label">Allergen Present</span>
-        <div class="stat-val-wrap">
-          <span class="stat-value" id="stat-allergen-yes">0</span>
-          <span class="stat-subtext" id="stat-allergen-pct">0% of total</span>
-        </div>
-      </div>
-
-      <div class="stat-card card-allergen-no">
-        <span class="stat-label">Allergen Free (No)</span>
-        <div class="stat-val-wrap">
-          <span class="stat-value" id="stat-allergen-no">0</span>
-          <span class="stat-subtext">Clean lines</span>
-        </div>
-      </div>
-
-      <div class="stat-card card-verified">
-        <span class="stat-label">Cleaning & Cross-Contam Check</span>
-        <div class="stat-val-wrap">
-          <span class="stat-value" id="stat-cleaning-pass">100%</span>
-          <span class="stat-subtext">Verified Pass</span>
-        </div>
-      </div>
-
-      <div class="stat-card">
-        <span class="stat-label">Quality Verified By</span>
-        <div class="stat-val-wrap">
-          <span class="stat-value" style="font-size: 20px;" id="stat-active-checker">Vishal / Tejas</span>
-          <span class="stat-subtext">QC Signoff</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- MAIN DATA TABLE CARD -->
-    <div class="register-card">
-      <div class="register-card-header">
-        <div class="register-card-title">
-          <span>📋 Daily Allergen & Cross-Contamination Log</span>
-          <span class="register-card-badge" id="table-record-count">0 Records</span>
-        </div>
-        <div style="font-size: 12px; color: var(--text-muted); font-weight: 500;">
-          All batches sequenced continuously • Changes sync live to cloud
+    <!-- Data Table Card -->
+    <section class="content-card">
+      <div class="card-header-bar">
+        <div class="card-header-title">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#7A0C22" stroke-width="2">
+            <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"></path>
+            <rect x="8" y="2" width="8" height="4" rx="1" ry="1"></rect>
+            <path d="M9 14l2 2 4-4"></path>
+          </svg>
+          <span>Daily Allergen & Cross-Contamination Log</span>
+          <span class="records-badge" id="records-count-badge">10 Records</span>
         </div>
       </div>
 
       <div class="table-responsive">
-        <table class="register-table">
+        <table class="custom-data-table">
           <thead>
             <tr>
-              <th style="width: 95px;">
+              <th style="width: 80px;">
                 Date
                 <span class="th-sub">(DD/MM/YY)</span>
               </th>
-              <th style="min-width: 220px; text-align: left; padding-left: 18px;">
+              <th style="min-width: 220px;">
                 Product Name
                 <span class="th-sub">(Masala / Seasoning)</span>
               </th>
-              <th style="width: 110px;">
+              <th style="width: 100px;">
                 Batch No.
               </th>
-              <th style="min-width: 200px;">
+              <th style="min-width: 180px;">
                 Allergen Present
                 <span class="th-sub">(If Yes, specify: Milk, Peanut, Tree Nuts, Sesame, Mustard, Soy, etc.)</span>
               </th>
-              <th style="min-width: 200px; text-align: left; padding-left: 14px;">
+              <th style="min-width: 190px;">
                 Previous Product
                 <span class="th-sub">(Last product processed)</span>
               </th>
-              <th style="width: 140px;">
+              <th style="width: 130px;">
                 Equipment Cleaned
                 <span class="th-sub">(Blender, Sifter, Scoops, etc.)</span>
               </th>
@@ -170,11 +175,11 @@
                 Cross-Contamination Check
                 <span class="th-sub">(Pass / Fail)</span>
               </th>
-              <th style="width: 130px;">
+              <th style="width: 110px;">
                 Checked By
                 <span class="th-sub">(Name / Signature)</span>
               </th>
-              <th style="width: 85px;" class="no-print">
+              <th style="width: 80px;">
                 Actions
               </th>
             </tr>
@@ -184,139 +189,145 @@
           </tbody>
         </table>
       </div>
-    </div>
 
-    <!-- PRINTABLE REGISTER SHEET (EXACT CLONE OF UPLOADED TEMPLATE IMAGE) -->
-    <div id="printable-register-sheet">
-      <div class="print-header-container">
-        <div class="print-brand-box">
-          <img src="assets/lv_spices_logo.jpg" alt="L V Spices" class="print-logo-img" />
-          <div>
-            <div class="print-brand-title">L V SPICES</div>
-            <div class="print-brand-subtitle">Spices & Seasonings</div>
-          </div>
-        </div>
-
-        <div class="print-divider-line"></div>
-
-        <div class="print-title-box">
-          <div class="print-main-title">Allergen & Cross-Contamination Control Register</div>
-          <div class="print-subtitle-pill">Daily Production & Packing Record</div>
-        </div>
-
-        <div class="print-date-frame">
-          <div class="print-date-row">Month : <span id="print-month-val" style="text-decoration: underline; font-weight: 800;">November</span></div>
-          <div>Year &nbsp;: <span id="print-year-val" style="text-decoration: underline; font-weight: 800;">2026</span></div>
+      <!-- Pagination Footer -->
+      <div class="table-footer">
+        <span id="pagination-info">Showing 1-10 of 10 records</span>
+        <div class="pagination-controls">
+          <button class="page-arrow-btn" id="prev-page-btn">‹</button>
+          <span class="page-num-box" id="cur-page-num">1</span>
+          <button class="page-arrow-btn" id="next-page-btn">›</button>
         </div>
       </div>
-
-      <table class="print-table">
-        <thead>
-          <tr>
-            <th style="width: 10%;">Date<small>(DD/MM/YY)</small></th>
-            <th style="width: 22%;">Product Name<small>(Masala / Seasoning)</small></th>
-            <th style="width: 11%;">Batch No.</th>
-            <th style="width: 19%;">Allergen Present<small>(If Yes, specify: Milk, Peanut, Tree Nuts, Sesame, Mustard, Soy, etc.)</small></th>
-            <th style="width: 17%;">Previous Product<small>(Last product processed)</small></th>
-            <th style="width: 9%;">Equipment Cleaned<small>(Blender, Vibro Sifter, Trays, etc.)</small></th>
-            <th style="width: 6%;">Cross-Contamination Check<small>(Pass / Fail)</small></th>
-            <th style="width: 6%;">Checked By<small>(Name / Signature)</small></th>
-          </tr>
-        </thead>
-        <tbody id="print-sheet-tbody">
-          <!-- Populated during print -->
-        </tbody>
-      </table>
-    </div>
+    </section>
 
   </main>
+</div>
 
-  <!-- ADD / EDIT RECORD MODAL -->
-  <div class="modal-overlay" id="record-modal" onclick="if(event.target===this)closeModal()">
-    <div class="modal-box">
-      <div class="modal-header">
-        <h3 id="modal-title">Edit Production Record</h3>
-        <button class="modal-close-btn" onclick="closeModal()">✕</button>
+<!-- ═══ MODAL (ADD / EDIT RECORD) ═══ -->
+<div class="modal-overlay" id="record-modal" onclick="if(event.target===this)closeModal()">
+  <div class="modal-box">
+    <div class="modal-header">
+      <h3 id="modal-title">Edit Production Record</h3>
+      <button class="modal-close-btn" onclick="closeModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <input type="hidden" id="m-record-id" />
+      
+      <div class="form-grid-2">
+        <div class="form-group">
+          <label>Date (DD/MM/YYYY) *</label>
+          <input type="date" id="m-date" class="form-input" required />
+        </div>
+        <div class="form-group">
+          <label>Batch No. *</label>
+          <input type="text" id="m-batch-no" class="form-input" placeholder="e.g. ABD-1126" required />
+        </div>
       </div>
 
-      <div class="modal-body">
-        <input type="hidden" id="m-record-id" />
-        
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>Date (DD/MM/YYYY) *</label>
-            <input type="date" id="m-date" class="form-input" required />
-          </div>
-          <div class="form-group">
-            <label>Batch No. *</label>
-            <input type="text" id="m-batch-no" class="form-input" placeholder="e.g. OS-1126" required />
-          </div>
-        </div>
+      <div class="form-group">
+        <label>Product Name (Masala / Seasoning) *</label>
+        <input type="text" id="m-product-name" class="form-input" placeholder="Start typing product name..." autocomplete="off" required />
+        <div class="autocomplete-dropdown" id="product-autocomplete"></div>
+      </div>
 
+      <div class="form-grid-2">
         <div class="form-group">
-          <label>Product Name (Masala / Seasoning) *</label>
-          <input type="text" id="m-product-name" class="form-input" placeholder="Start typing product name..." autocomplete="off" required />
-          <div class="autocomplete-dropdown" id="product-autocomplete"></div>
+          <label>Allergen Present (Status)</label>
+          <select id="m-has-allergen" class="form-input">
+            <option value="no">No — Allergen Free</option>
+            <option value="yes">Yes — Contains Allergen</option>
+          </select>
         </div>
-
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>Allergen Present (Status)</label>
-            <select id="m-has-allergen" class="form-input">
-              <option value="no">No — Allergen Free</option>
-              <option value="yes">Yes — Contains Allergen</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Allergen Specification</label>
-            <input type="text" id="m-allergen-spec" class="form-input" placeholder="e.g. Milk, Sesame, Mustard, Soy..." />
-          </div>
-        </div>
-
         <div class="form-group">
-          <label>Previous Product (Last Processed on Line)</label>
-          <input type="text" id="m-prev-product" class="form-input" placeholder="Previous product on equipment..." autocomplete="off" />
-          <div class="autocomplete-dropdown" id="prev-product-autocomplete"></div>
+          <label>Allergen Specification</label>
+          <input type="text" id="m-allergen-spec" class="form-input" placeholder="e.g. Milk / Dairy, Mustard, Sesame..." />
         </div>
+      </div>
 
-        <div class="form-grid-2">
-          <div class="form-group">
-            <label>Equipment Cleaned</label>
-            <select id="m-equipment-cleaned" class="form-input">
-              <option value="Yes" selected>Yes — Blender, Sifter & Scoops Cleaned</option>
-              <option value="No">No</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>Cross-Contamination Check</label>
-            <select id="m-cross-check" class="form-input">
-              <option value="Pass" selected>Pass</option>
-              <option value="Fail">Fail</option>
-            </select>
-          </div>
-        </div>
+      <div class="form-group">
+        <label>Previous Product (Last Processed on Equipment)</label>
+        <input type="text" id="m-prev-product" class="form-input" placeholder="Previous product on line..." autocomplete="off" />
+        <div class="autocomplete-dropdown" id="prev-product-autocomplete"></div>
+      </div>
 
+      <div class="form-grid-2">
         <div class="form-group">
-          <label>Checked By (QC Inspector)</label>
-          <select id="m-checked-by" class="form-input">
-            <option value="Vishal">Vishal</option>
-            <option value="Tejas">Tejas</option>
+          <label>Equipment Cleaned</label>
+          <select id="m-equipment-cleaned" class="form-input">
+            <option value="Yes" selected>Yes</option>
+            <option value="No">No</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Cross-Contamination Check</label>
+          <select id="m-cross-check" class="form-input">
+            <option value="Pass" selected>Pass</option>
+            <option value="Fail">Fail</option>
           </select>
         </div>
       </div>
 
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal()">Cancel</button>
-        <button class="btn btn-primary" id="btn-save-record">Save Record</button>
+      <div class="form-group">
+        <label>Checked By (QC Inspector)</label>
+        <select id="m-checked-by" class="form-input">
+          <option value="Vishal">Vishal</option>
+          <option value="Tejas">Tejas</option>
+        </select>
       </div>
+    </div>
+
+    <div class="modal-footer">
+      <button class="btn btn-white" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-burgundy" id="btn-save-record">Save Record</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ PRINT REGISTER SHEET (FOR WINDOW.PRINT) ═══ -->
+<div id="printable-register-sheet">
+  <div class="print-header-container">
+    <div class="print-brand-box">
+      <img src="assets/lv_spices_logo.jpg" alt="L V Spices" class="print-logo-img" />
+      <div>
+        <div class="print-brand-title">L V SPICES</div>
+        <div class="print-brand-subtitle">Spices & Seasonings</div>
+      </div>
+    </div>
+
+    <div class="print-divider-line"></div>
+
+    <div class="print-title-box">
+      <div class="print-main-title">Allergen & Cross-Contamination Control Register</div>
+      <div class="print-subtitle-pill">Daily Production & Packing Record</div>
+    </div>
+
+    <div class="print-date-frame">
+      <div>Month : <span id="print-month-val" style="text-decoration: underline; font-weight: 800;">November</span></div>
+      <div style="margin-top: 4px;">Year &nbsp;: <span id="print-year-val" style="text-decoration: underline; font-weight: 800;">2026</span></div>
     </div>
   </div>
 
-  <!-- TOAST NOTIFICATION CONTAINER -->
-  <div id="toast-container"></div>
+  <table class="print-table">
+    <thead>
+      <tr>
+        <th style="width: 10%;">Date<small>(DD/MM/YY)</small></th>
+        <th style="width: 22%;">Product Name<small>(Masala / Seasoning)</small></th>
+        <th style="width: 11%;">Batch No.</th>
+        <th style="width: 19%;">Allergen Present<small>(If Yes, specify: Milk, Peanut, Tree Nuts, Sesame, Mustard, Soy, etc.)</small></th>
+        <th style="width: 17%;">Previous Product<small>(Last product processed)</small></th>
+        <th style="width: 9%;">Equipment Cleaned<small>(Blender, Vibro Sifter, Trays, etc.)</small></th>
+        <th style="width: 6%;">Cross-Contamination Check<small>(Pass / Fail)</small></th>
+        <th style="width: 6%;">Checked By<small>(Name / Signature)</small></th>
+      </tr>
+    </thead>
+    <tbody id="print-sheet-tbody"></tbody>
+  </table>
+</div>
 
-  <!-- Scripts -->
-  <script type="module" src="js/app.js"></script>
+<div id="toast-container"></div>
+
+<script type="module" src="js/app.js"></script>
 </body>
 </html>
-

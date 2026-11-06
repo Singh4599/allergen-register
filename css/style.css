@@ -819,28 +819,31 @@ body {
   }
 
   .print-page {
-    border: 2.5px solid #003366 !important;
-    border-radius: 10px;
-    padding: 12px 14px;
+    border: 2px solid #003366 !important;
+    border-radius: 8px;
+    padding: 10px 12px;
     width: 100%;
     box-sizing: border-box;
     page-break-after: always;
+    break-after: page;
     page-break-inside: avoid;
-    margin-bottom: 25px;
+    break-inside: avoid;
+    margin: 0 !important;
     background: #FFFFFF !important;
   }
 
   .print-page:last-child {
     page-break-after: auto;
+    break-after: auto;
   }
 
   .print-header-container {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    border-bottom: 1px solid #003366;
-    padding-bottom: 10px;
-    margin-bottom: 12px;
+    border-bottom: 1.5px solid #003366;
+    padding-bottom: 8px;
+    margin-bottom: 10px;
   }
 
   .print-brand-box {
@@ -850,20 +853,20 @@ body {
   }
 
   .print-logo-img {
-    height: 52px;
+    height: 48px;
     width: auto;
   }
 
   .print-brand-title {
-    font-size: 19pt;
+    font-size: 18pt;
     font-weight: 900;
     color: #003366;
-    letter-spacing: 1px;
+    letter-spacing: 0.5px;
     line-height: 1;
   }
 
   .print-brand-subtitle {
-    font-size: 9.5pt;
+    font-size: 9pt;
     font-weight: 700;
     color: #333333;
     margin-top: 2px;
@@ -871,9 +874,9 @@ body {
 
   .print-divider-line {
     width: 1px;
-    height: 48px;
+    height: 44px;
     background: #CBD5E1;
-    margin: 0 16px;
+    margin: 0 14px;
   }
 
   .print-title-box {
@@ -883,7 +886,7 @@ body {
 
   .print-main-title {
     font-family: var(--font-heading);
-    font-size: 16pt;
+    font-size: 15pt;
     font-weight: 900;
     color: #003366;
     letter-spacing: -0.2px;
@@ -891,13 +894,13 @@ body {
 
   .print-subtitle-pill {
     display: inline-block;
-    background: #DCEBF7;
-    color: #003366;
-    font-size: 10.5pt;
+    background: #EBF3FA !important;
+    color: #003366 !important;
+    font-size: 10pt;
     font-weight: 800;
-    padding: 3px 18px;
+    padding: 2px 16px;
     border-radius: 999px;
-    margin-top: 5px;
+    margin-top: 4px;
     border: 1px solid #B0D0ED;
   }
 
@@ -907,7 +910,7 @@ body {
     padding: 6px 14px;
     min-width: 150px;
     text-align: left;
-    font-size: 10.5pt;
+    font-size: 10pt;
     font-weight: 700;
     color: #003366;
   }
@@ -915,35 +918,39 @@ body {
   .print-table {
     width: 100%;
     border-collapse: collapse;
-    font-size: 9.5pt;
+    font-size: 9pt;
     border: 2px solid #003366;
   }
 
+  /* Soft, clean, readable header - NOT a heavy dark "hard" block */
   .print-table th {
-    background: #003366 !important;
-    color: #FFFFFF !important;
+    background: #F1F5F9 !important;
+    color: #003366 !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
     font-weight: 800;
-    font-size: 9pt;
-    padding: 8px 6px;
+    font-size: 8.5pt;
+    padding: 6px 4px;
     text-align: center;
-    border: 1px solid #CBD5E1;
+    border: 1.5px solid #003366;
+    border-bottom: 2px solid #003366;
   }
 
   .print-table th small {
     display: block;
-    font-size: 7.5pt;
-    font-weight: 500;
-    opacity: 0.95;
+    font-size: 7pt;
+    font-weight: 600;
+    color: #334155 !important;
     margin-top: 2px;
+    line-height: 1.15;
   }
 
   .print-table td {
-    padding: 6px 8px;
+    padding: 5px 6px;
     border: 1px solid #003366;
     vertical-align: middle;
     font-size: 8.5pt;
+    height: 29px;
   }
 
   .print-table th:nth-child(3),

@@ -465,15 +465,49 @@ async function executePrintRange() {
     return;
   }
 
-  showToast(`Preparing ${datesToPrint.length} page(s) for printing...`, 'info');
+  showToast(`Loading records across ${datesToPrint.length} production dates...`, 'info');
+
+  let allRecords = [];
+  for (const dateStr of datesToPrint) {
+    const records = await getRecordsForDate(dateStr);
+    if (records && records.length) {
+      allRecords.push(...records);
+    }
+  }
+
+  if (!allRecords.length) {
+    showToast('No production records found for the selected dates', 'error');
+    return;
+  }
+
+  // 10 rows per register sheet (continuous multi-day register logging)
+  const ROWS_PER_PAGE = 10;
+  const totalPages = Math.ceil(allRecords.length / ROWS_PER_PAGE);
+
+  showToast(`Formatting ${totalPages} register sheet(s)...`, 'info');
 
   let pagesHtml = '';
 
-  for (const dateStr of datesToPrint) {
-    const records = await getRecordsForDate(dateStr);
-    const { month, year } = formatMonthYear(dateStr);
+  for (let pageIdx = 0; pageIdx < totalPages; pageIdx++) {
+    const startIdx = pageIdx * ROWS_PER_PAGE;
+    const pageRecords = allRecords.slice(startIdx, startIdx + ROWS_PER_PAGE);
 
-    let rowsHtml = records.map(r => {
+    const firstDate = pageRecords[0]?.dateISO || state.currentDate;
+    const lastDate = pageRecords[pageRecords.length - 1]?.dateISO || firstDate;
+
+    const my1 = formatMonthYear(firstDate);
+    const my2 = formatMonthYear(lastDate);
+
+    let monthDisplay = my1.month;
+    let yearDisplay = my1.year;
+    if (my1.month !== my2.month) {
+      monthDisplay = `${my1.month} / ${my2.month}`;
+    }
+    if (my1.year !== my2.year) {
+      yearDisplay = `${my1.year} - ${my2.year}`;
+    }
+
+    let rowsHtml = pageRecords.map(r => {
       const cleanAllergen = (r.allergenPresent || '').replace(/^[⚠️!\s]+/, '');
       return `
         <tr>
@@ -489,11 +523,12 @@ async function executePrintRange() {
       `;
     }).join('');
 
-    if (padRows) {
-      const rowsNeeded = Math.max(0, 10 - records.length);
+    // If padRows is enabled and this sheet has fewer than 10 rows, pad to 10 rows
+    if (padRows && pageRecords.length < ROWS_PER_PAGE) {
+      const rowsNeeded = ROWS_PER_PAGE - pageRecords.length;
       for (let i = 0; i < rowsNeeded; i++) {
         rowsHtml += `
-          <tr style="height: 30px;">
+          <tr style="height: 29px;">
             <td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
           </tr>
         `;
@@ -519,8 +554,8 @@ async function executePrintRange() {
           </div>
 
           <div class="print-date-frame">
-            <div>Month : <span style="text-decoration: underline; font-weight: 800;">${escapeHtml(month)}</span></div>
-            <div style="margin-top: 4px;">Year &nbsp;: <span style="text-decoration: underline; font-weight: 800;">${escapeHtml(year)}</span></div>
+            <div>Month : <span style="text-decoration: underline; font-weight: 800;">${escapeHtml(monthDisplay)}</span></div>
+            <div style="margin-top: 4px;">Year &nbsp;: <span style="text-decoration: underline; font-weight: 800;">${escapeHtml(yearDisplay)}</span></div>
           </div>
         </div>
 

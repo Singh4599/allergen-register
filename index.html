@@ -285,45 +285,67 @@
   </div>
 </div>
 
-<!-- ═══ PRINT REGISTER SHEET (FOR WINDOW.PRINT) ═══ -->
-<div id="printable-register-sheet">
-  <div class="print-header-container">
-    <div class="print-brand-box">
-      <img src="assets/lv_spices_logo.jpg" alt="L V Spices" class="print-logo-img" />
-      <div>
-        <div class="print-brand-title">L V SPICES</div>
-        <div class="print-brand-subtitle">Spices & Seasonings</div>
+<!-- ═══ MODAL (PRINT REGISTER RANGE / MONTH) ═══ -->
+<div class="modal-overlay" id="print-modal" onclick="if(event.target===this)closePrintModal()">
+  <div class="modal-box" style="max-width: 480px;">
+    <div class="modal-header">
+      <h3>Print Register Sheets</h3>
+      <button class="modal-close-btn" onclick="closePrintModal()">✕</button>
+    </div>
+
+    <div class="modal-body">
+      <div class="form-group">
+        <label>Print Scope</label>
+        <div style="display: flex; flex-direction: column; gap: 10px; margin-top: 10px;">
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; text-transform: none; cursor: pointer;">
+            <input type="radio" name="print-scope" value="single" id="scope-single" checked />
+            Selected Date Only (<span id="print-modal-date-display" style="color: #7A0C22;">--</span>)
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; text-transform: none; cursor: pointer;">
+            <input type="radio" name="print-scope" value="range" id="scope-range" />
+            Custom Date Range
+          </label>
+          <label style="display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; text-transform: none; cursor: pointer;">
+            <input type="radio" name="print-scope" value="month" id="scope-month" />
+            Entire Month
+          </label>
+        </div>
+      </div>
+
+      <div id="print-range-fields" class="form-grid-2" style="display: none; margin-top: 12px;">
+        <div class="form-group">
+          <label>From Date</label>
+          <input type="date" id="print-from-date" class="form-input" min="2026-04-01" />
+        </div>
+        <div class="form-group">
+          <label>To Date</label>
+          <input type="date" id="print-to-date" class="form-input" min="2026-04-01" />
+        </div>
+      </div>
+
+      <div id="print-month-fields" class="form-group" style="display: none; margin-top: 12px;">
+        <label>Select Month</label>
+        <input type="month" id="print-month-picker" class="form-input" min="2026-04" />
+      </div>
+
+      <div class="form-group" style="margin-top: 14px; margin-bottom: 0;">
+        <label style="display: flex; align-items: center; gap: 8px; font-size: 12.5px; font-weight: 500; text-transform: none; cursor: pointer;">
+          <input type="checkbox" id="print-pad-rows" checked />
+          Fill each sheet up to 10 rows (Standard Register format)
+        </label>
       </div>
     </div>
 
-    <div class="print-divider-line"></div>
-
-    <div class="print-title-box">
-      <div class="print-main-title">Allergen & Cross-Contamination Control Register</div>
-      <div class="print-subtitle-pill">Daily Production & Packing Record</div>
-    </div>
-
-    <div class="print-date-frame">
-      <div>Month : <span id="print-month-val" style="text-decoration: underline; font-weight: 800;">November</span></div>
-      <div style="margin-top: 4px;">Year &nbsp;: <span id="print-year-val" style="text-decoration: underline; font-weight: 800;">2026</span></div>
+    <div class="modal-footer">
+      <button class="btn btn-white" onclick="closePrintModal()">Cancel</button>
+      <button class="btn btn-burgundy" id="btn-execute-print">🖨 Print Sheets</button>
     </div>
   </div>
+</div>
 
-  <table class="print-table">
-    <thead>
-      <tr>
-        <th style="width: 10%;">Date<small>(DD/MM/YY)</small></th>
-        <th style="width: 22%;">Product Name<small>(Masala / Seasoning)</small></th>
-        <th style="width: 11%;">Batch No.</th>
-        <th style="width: 19%;">Allergen Present<small>(If Yes, specify: Milk, Peanut, Tree Nuts, Sesame, Mustard, Soy, etc.)</small></th>
-        <th style="width: 17%;">Previous Product<small>(Last product processed)</small></th>
-        <th style="width: 9%;">Equipment Cleaned<small>(Blender, Vibro Sifter, Trays, etc.)</small></th>
-        <th style="width: 6%;">Cross-Contamination Check<small>(Pass / Fail)</small></th>
-        <th style="width: 6%;">Checked By<small>(Name / Signature)</small></th>
-      </tr>
-    </thead>
-    <tbody id="print-sheet-tbody"></tbody>
-  </table>
+<!-- ═══ PRINT REGISTER SHEET (FOR WINDOW.PRINT) ═══ -->
+<div id="printable-register-sheet">
+  <!-- Populated dynamically with .print-page containers -->
 </div>
 
 <div id="toast-container"></div>

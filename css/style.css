@@ -8,7 +8,7 @@
   --font-heading: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
   --font-sig: 'Caveat', cursive, serif;
 
-  /* Executive Burgundy & Cream Palette (Matching Screenshot) */
+  /* Executive Burgundy & Cream Palette */
   --burgundy-primary: #7A0C22;
   --burgundy-dark: #63081A;
   --burgundy-hover: #8D112A;
@@ -403,7 +403,7 @@ body {
   border-radius: var(--radius-full);
 }
 
-/* ── DATA TABLE (EXACT MATCHING USER SCREENSHOT) ── */
+/* ── DATA TABLE ── */
 .table-responsive {
   width: 100%;
   overflow-x: auto;
@@ -432,6 +432,13 @@ body {
 .custom-data-table thead th:nth-child(2) {
   text-align: left;
   padding-left: 18px;
+}
+
+/* Batch No Column Header: NEVER WRAP */
+.custom-data-table thead th:nth-child(3) {
+  min-width: 115px;
+  width: 120px;
+  white-space: nowrap !important;
 }
 
 .custom-data-table thead th:nth-child(5) {
@@ -465,9 +472,15 @@ body {
   text-align: center;
 }
 
+/* Batch No cell: NEVER WRAP */
+.custom-data-table tbody td:nth-child(3) {
+  white-space: nowrap !important;
+}
+
 .td-date {
   font-weight: 700;
   color: var(--text-dark);
+  white-space: nowrap;
 }
 
 .product-title {
@@ -485,6 +498,7 @@ body {
   margin-top: 1px;
 }
 
+/* Batch Badge: single line, no wrapping */
 .batch-badge {
   display: inline-block;
   background: #F1F5F9;
@@ -495,8 +509,11 @@ body {
   font-weight: 700;
   padding: 3px 8px;
   border-radius: 4px;
+  white-space: nowrap !important;
+  word-break: keep-all !important;
 }
 
+/* Allergen Pills: Clean text without emergency emoji */
 .pill-allergen-no {
   display: inline-flex;
   align-items: center;
@@ -508,12 +525,13 @@ body {
   font-weight: 700;
   padding: 3px 10px;
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .pill-allergen-yes {
   display: inline-flex;
   align-items: center;
-  gap: 4px;
+  justify-content: center;
   background: var(--red-badge-bg);
   color: var(--red-badge-text);
   border: 1px solid var(--red-badge-border);
@@ -521,6 +539,7 @@ body {
   font-weight: 700;
   padding: 3px 10px;
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .prev-product-text {
@@ -541,6 +560,7 @@ body {
   font-weight: 700;
   padding: 3px 10px;
   border-radius: var(--radius-full);
+  white-space: nowrap;
 }
 
 .signature-name {
@@ -616,7 +636,7 @@ body {
   font-weight: 700;
 }
 
-/* ── MODAL ── */
+/* ── MODALS ── */
 .modal-overlay {
   position: fixed;
   top: 0; left: 0; right: 0; bottom: 0;
@@ -762,8 +782,10 @@ body {
   gap: 8px;
 }
 
-/* ── PRINT VIEW (A4 LANDSCAPE EXACT TEMPLATE) ── */
-#printable-register-sheet { display: none; }
+/* ── PRINT VIEW (A4 LANDSCAPE MULTI-PAGE & SINGLE PAGE) ── */
+#printable-register-sheet {
+  display: none;
+}
 
 @media print {
   @page {
@@ -780,22 +802,36 @@ body {
   .top-header, 
   .toolbar-strip, 
   .content-card, 
-  .modal-overlay {
+  .modal-overlay,
+  .toast-box {
     display: none !important;
   }
 
   .main-wrapper {
     padding: 0 !important;
     max-width: 100% !important;
+    margin: 0 !important;
   }
 
   #printable-register-sheet {
     display: block !important;
-    border: 2.5px solid #003366;
-    border-radius: 12px;
+    width: 100%;
+  }
+
+  .print-page {
+    border: 2.5px solid #003366 !important;
+    border-radius: 10px;
     padding: 12px 14px;
     width: 100%;
     box-sizing: border-box;
+    page-break-after: always;
+    page-break-inside: avoid;
+    margin-bottom: 25px;
+    background: #FFFFFF !important;
+  }
+
+  .print-page:last-child {
+    page-break-after: auto;
   }
 
   .print-header-container {
@@ -847,7 +883,7 @@ body {
 
   .print-main-title {
     font-family: var(--font-heading);
-    font-size: 17pt;
+    font-size: 16pt;
     font-weight: 900;
     color: #003366;
     letter-spacing: -0.2px;
@@ -857,7 +893,7 @@ body {
     display: inline-block;
     background: #DCEBF7;
     color: #003366;
-    font-size: 11pt;
+    font-size: 10.5pt;
     font-weight: 800;
     padding: 3px 18px;
     border-radius: 999px;
@@ -908,6 +944,11 @@ body {
     border: 1px solid #003366;
     vertical-align: middle;
     font-size: 8.5pt;
+  }
+
+  .print-table th:nth-child(3),
+  .print-table td:nth-child(3) {
+    white-space: nowrap !important;
   }
 
   .print-table .td-center {

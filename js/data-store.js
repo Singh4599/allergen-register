@@ -87,10 +87,10 @@ function mergeRecords(baseEntries, overrides, dateStr) {
   // 3. Sort entries by sequence
   const result = Array.from(recordMap.values()).sort((a, b) => (a.seq || 999) - (b.seq || 999));
 
-  // 4. Ensure previousProduct chain stays coherent if first record is intact
-  for (let i = 1; i < result.length; i++) {
+  // 4. Ensure previousProduct chain: each row's previous product is the row directly BELOW it
+  for (let i = 0; i < result.length - 1; i++) {
     if (!result[i].isManualOverridePrev) {
-      result[i].previousProduct = result[i - 1].productName;
+      result[i].previousProduct = result[i + 1].productName;
     }
   }
 

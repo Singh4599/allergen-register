@@ -2,7 +2,7 @@
 // Exact UI & Functionality Controller matching reference design
 
 import { MASTER_PRODUCTS } from './products-master.js';
-import { getPreviousWorkingDate } from './generator.js';
+import { getPreviousWorkingDate, generateEntriesForDate } from './generator.js';
 import { 
   getRecordsForDate, 
   saveRecord, 
@@ -26,7 +26,7 @@ const productNames = MASTER_PRODUCTS.map(p => ({
   code: p.code,
   hasAllergen: p.hasAllergen,
   allergens: p.allergens,
-  allergenText: p.allergenText,
+  allergenText: p.allergenText.replace(/^[⚠️!\s]+/, ''),
   category: p.category
 }));
 
@@ -121,9 +121,15 @@ function initUI() {
 
   // Actions
   document.getElementById('btn-new-entry').addEventListener('click', () => openRecordModal());
-  document.getElementById('btn-print-sheet').addEventListener('click', printRegisterSheet);
+  document.getElementById('btn-print-sheet').addEventListener('click', openPrintModal);
   document.getElementById('btn-export-excel').addEventListener('click', exportToExcel);
   document.getElementById('btn-save-record').addEventListener('click', handleSaveRecord);
+  document.getElementById('btn-execute-print').addEventListener('click', executePrintRange);
+
+  // Print scope radio change listeners
+  document.querySelectorAll('input[name="print-scope"]').forEach(radio => {
+    radio.addEventListener('change', updatePrintScopeUI);
+  });
 
   // Pagination buttons
   document.getElementById('prev-page-btn').addEventListener('click', () => {
@@ -252,8 +258,10 @@ function renderTable() {
   }
 
   tbody.innerHTML = pageRecords.map(r => {
+    // Strip any emoji so allergen text is clean
+    const cleanAllergen = (r.allergenPresent || '').replace(/^[⚠️!\s]+/, '');
     const allergenHtml = r.hasAllergen
-      ? `<span class="pill-allergen-yes">⚠️ ${escapeHtml(r.allergenPresent)}</span>`
+      ? `<span class="pill-allergen-yes">${escapeHtml(cleanAllergen)}</span>`
       : `<span class="pill-allergen-no">✓ No</span>`;
 
     return `
@@ -290,41 +298,177 @@ function renderTable() {
   }).join('');
 }
 
-// ── PRINT REGISTER SHEET ──
-function printRegisterSheet() {
-  const { month, year } = formatMonthYear(state.currentDate);
-  const mEl = document.getElementById('print-month-val');
-  const yEl = document.getElementById('print-year-val');
-  if (mEl) mEl.textContent = month;
-  if (yEl) yEl.textContent = year;
+// ── PRINT REGISTER MODAL & DATE RANGE ──
+function openPrintModal() {
+  const modal = document.getElementById('print-modal');
+  const dateDisplay = document.getElementById('print-modal-date-display');
+  if (dateDisplay) dateDisplay.textContent = formatDateDisplay(state.currentDate);
 
-  const printTbody = document.getElementById('print-sheet-tbody');
-  const records = state.filteredRecords;
+  // Set default range values
+  const fromInput = document.getElementById('print-from-date');
+  const toInput = document.getElementById('print-to-date');
+  const monthInput = document.getElementById('print-month-picker');
 
-  let rowsHtml = records.map(r => `
-    <tr>
-      <td class="td-center" style="font-weight: 700;">${escapeHtml(r.date)}</td>
-      <td style="font-weight: 700;">${escapeHtml(r.productName)}</td>
-      <td class="td-center" style="font-family: monospace; font-weight: 700;">${escapeHtml(r.batchNo)}</td>
-      <td style="font-weight: 600; color: ${r.hasAllergen ? '#B91C1C' : '#047857'};">${escapeHtml(r.allergenPresent)}</td>
-      <td style="font-weight: 600;">${escapeHtml(r.previousProduct)}</td>
-      <td class="td-center" style="font-weight: 700;">Yes</td>
-      <td class="td-center" style="font-weight: 700; color: #047857;">Pass</td>
-      <td class="td-center sig-cell">${escapeHtml(r.checkedBy)}</td>
-    </tr>
-  `).join('');
+  if (fromInput) fromInput.value = state.currentDate;
+  if (toInput) toInput.value = state.currentDate;
+  if (monthInput) monthInput.value = state.currentDate.slice(0, 7);
 
-  const rowsNeeded = Math.max(0, 10 - records.length);
-  for (let i = 0; i < rowsNeeded; i++) {
-    rowsHtml += `
-      <tr style="height: 32px;">
-        <td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
-      </tr>
+  document.getElementById('scope-single').checked = true;
+  updatePrintScopeUI();
+
+  if (modal) modal.classList.add('open');
+}
+
+window.closePrintModal = function() {
+  const modal = document.getElementById('print-modal');
+  if (modal) modal.classList.remove('open');
+};
+
+function updatePrintScopeUI() {
+  const selectedScope = document.querySelector('input[name="print-scope"]:checked')?.value || 'single';
+  const rangeBox = document.getElementById('print-range-fields');
+  const monthBox = document.getElementById('print-month-fields');
+
+  if (rangeBox) rangeBox.style.display = selectedScope === 'range' ? 'grid' : 'none';
+  if (monthBox) monthBox.style.display = selectedScope === 'month' ? 'block' : 'none';
+}
+
+async function executePrintRange() {
+  const selectedScope = document.querySelector('input[name="print-scope"]:checked')?.value || 'single';
+  const padRows = document.getElementById('print-pad-rows')?.checked;
+  const printSheet = document.getElementById('printable-register-sheet');
+
+  let datesToPrint = [];
+
+  if (selectedScope === 'single') {
+    datesToPrint = [state.currentDate];
+  } else if (selectedScope === 'range') {
+    const fromDateStr = document.getElementById('print-from-date')?.value;
+    const toDateStr = document.getElementById('print-to-date')?.value;
+    if (!fromDateStr || !toDateStr) {
+      showToast('Please select both From Date and To Date', 'error');
+      return;
+    }
+    if (fromDateStr > toDateStr) {
+      showToast('From Date cannot be after To Date', 'error');
+      return;
+    }
+
+    let cur = new Date(fromDateStr + 'T12:00:00Z');
+    const end = new Date(toDateStr + 'T12:00:00Z');
+    while (cur <= end) {
+      if (cur.getUTCDay() !== 0) { // skip Sundays
+        datesToPrint.push(cur.toISOString().split('T')[0]);
+      }
+      cur.setUTCDate(cur.getUTCDate() + 1);
+    }
+  } else if (selectedScope === 'month') {
+    const monthVal = document.getElementById('print-month-picker')?.value; // YYYY-MM
+    if (!monthVal) {
+      showToast('Please select a Month to print', 'error');
+      return;
+    }
+    const [y, m] = monthVal.split('-').map(Number);
+    const daysInMonth = new Date(y, m, 0).getDate();
+    for (let day = 1; day <= daysInMonth; day++) {
+      const dStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      const d = new Date(dStr + 'T12:00:00Z');
+      if (d.getUTCDay() !== 0) { // skip Sundays
+        datesToPrint.push(dStr);
+      }
+    }
+  }
+
+  if (!datesToPrint.length) {
+    showToast('No working dates found in the selected range', 'error');
+    return;
+  }
+
+  showToast(`Preparing ${datesToPrint.length} page(s) for printing...`, 'info');
+
+  let pagesHtml = '';
+
+  for (const dateStr of datesToPrint) {
+    const records = await getRecordsForDate(dateStr);
+    const { month, year } = formatMonthYear(dateStr);
+
+    let rowsHtml = records.map(r => {
+      const cleanAllergen = (r.allergenPresent || '').replace(/^[⚠️!\s]+/, '');
+      return `
+        <tr>
+          <td class="td-center" style="font-weight: 700;">${escapeHtml(r.date)}</td>
+          <td style="font-weight: 700;">${escapeHtml(r.productName)}</td>
+          <td class="td-center" style="font-family: monospace; font-weight: 700; white-space: nowrap;">${escapeHtml(r.batchNo)}</td>
+          <td style="font-weight: 600; color: ${r.hasAllergen ? '#B91C1C' : '#047857'}; text-align: center;">${escapeHtml(cleanAllergen)}</td>
+          <td style="font-weight: 600;">${escapeHtml(r.previousProduct)}</td>
+          <td class="td-center" style="font-weight: 700;">Yes</td>
+          <td class="td-center" style="font-weight: 700; color: #047857;">Pass</td>
+          <td class="td-center sig-cell">${escapeHtml(r.checkedBy)}</td>
+        </tr>
+      `;
+    }).join('');
+
+    if (padRows) {
+      const rowsNeeded = Math.max(0, 10 - records.length);
+      for (let i = 0; i < rowsNeeded; i++) {
+        rowsHtml += `
+          <tr style="height: 30px;">
+            <td>&nbsp;</td><td></td><td></td><td></td><td></td><td></td><td></td><td></td>
+          </tr>
+        `;
+      }
+    }
+
+    pagesHtml += `
+      <div class="print-page">
+        <div class="print-header-container">
+          <div class="print-brand-box">
+            <img src="assets/lv_spices_logo.jpg" alt="L V Spices" class="print-logo-img" />
+            <div>
+              <div class="print-brand-title">L V SPICES</div>
+              <div class="print-brand-subtitle">Spices & Seasonings</div>
+            </div>
+          </div>
+
+          <div class="print-divider-line"></div>
+
+          <div class="print-title-box">
+            <div class="print-main-title">Allergen & Cross-Contamination Control Register</div>
+            <div class="print-subtitle-pill">Daily Production & Packing Record</div>
+          </div>
+
+          <div class="print-date-frame">
+            <div>Month : <span style="text-decoration: underline; font-weight: 800;">${escapeHtml(month)}</span></div>
+            <div style="margin-top: 4px;">Year &nbsp;: <span style="text-decoration: underline; font-weight: 800;">${escapeHtml(year)}</span></div>
+          </div>
+        </div>
+
+        <table class="print-table">
+          <thead>
+            <tr>
+              <th style="width: 10%;">Date<small>(DD/MM/YY)</small></th>
+              <th style="width: 22%;">Product Name<small>(Masala / Seasoning)</small></th>
+              <th style="width: 11%; white-space: nowrap;">Batch No.</th>
+              <th style="width: 19%;">Allergen Present<small>(If Yes, specify: Milk, Peanut, Tree Nuts, Sesame, Mustard, Soy, etc.)</small></th>
+              <th style="width: 17%;">Previous Product<small>(Last product processed)</small></th>
+              <th style="width: 9%;">Equipment Cleaned<small>(Blender, Vibro Sifter, Trays, etc.)</small></th>
+              <th style="width: 6%;">Cross-Contamination Check<small>(Pass / Fail)</small></th>
+              <th style="width: 6%;">Checked By<small>(Name / Signature)</small></th>
+            </tr>
+          </thead>
+          <tbody>
+            ${rowsHtml}
+          </tbody>
+        </table>
+      </div>
     `;
   }
 
-  printTbody.innerHTML = rowsHtml;
-  window.print();
+  printSheet.innerHTML = pagesHtml;
+  closePrintModal();
+  setTimeout(() => {
+    window.print();
+  }, 250);
 }
 
 // ── EXCEL EXPORT ──
@@ -353,11 +497,12 @@ function exportToExcel() {
   ];
 
   state.filteredRecords.forEach(r => {
+    const cleanAllergen = (r.allergenPresent || '').replace(/^[⚠️!\s]+/, '');
     rows.push([
       r.date,
       r.productName,
       r.batchNo,
-      r.allergenPresent,
+      cleanAllergen,
       r.previousProduct,
       r.equipmentCleaned || 'Yes',
       r.crossContaminationCheck || 'Pass',
@@ -402,9 +547,10 @@ function openRecordModal(recordId = null) {
     document.getElementById('m-product-name').value = r.productName;
     document.getElementById('m-has-allergen').value = r.hasAllergen ? 'yes' : 'no';
     
-    const spec = r.allergenPresent.startsWith('Yes (') 
-      ? r.allergenPresent.slice(5, -1) 
-      : (r.hasAllergen ? r.allergenPresent.replace(/^Yes\s*[-:]?\s*/i, '') : '');
+    const cleanPresent = (r.allergenPresent || '').replace(/^[⚠️!\s]+/, '');
+    const spec = cleanPresent.startsWith('Yes (') 
+      ? cleanPresent.slice(5, -1) 
+      : (r.hasAllergen ? cleanPresent.replace(/^Yes\s*[-:]?\s*/i, '') : '');
     document.getElementById('m-allergen-spec').value = spec;
 
     document.getElementById('m-prev-product').value = r.previousProduct;
@@ -412,6 +558,7 @@ function openRecordModal(recordId = null) {
     document.getElementById('m-cross-check').value = r.crossContaminationCheck || 'Pass';
     document.getElementById('m-checked-by').value = r.checkedBy || 'Vishal';
   } else {
+    // New Record: Added to TOP, so its previous product is the current top row!
     title.textContent = 'Add New Production Record';
     document.getElementById('m-record-id').value = '';
     document.getElementById('m-date').value = state.currentDate;
@@ -420,10 +567,11 @@ function openRecordModal(recordId = null) {
     document.getElementById('m-has-allergen').value = 'no';
     document.getElementById('m-allergen-spec').value = '';
     
-    const lastProduct = state.records.length > 0 
-      ? state.records[state.records.length - 1].productName 
+    // The previous product for this new top record is the currently top product of the day
+    const topProduct = state.records.length > 0 
+      ? state.records[0].productName 
       : 'JEERA POWDER';
-    document.getElementById('m-prev-product').value = lastProduct;
+    document.getElementById('m-prev-product').value = topProduct;
     document.getElementById('m-equipment-cleaned').value = 'Yes';
     document.getElementById('m-cross-check').value = 'Pass';
     document.getElementById('m-checked-by').value = 'Vishal';
@@ -485,7 +633,7 @@ async function handleSaveRecord() {
     equipmentCleaned: equipmentCleaned,
     crossContaminationCheck: crossContaminationCheck,
     checkedBy: checkedBy,
-    seq: state.records.length + 1
+    seq: 0 // New manual entries placed at top
   };
 
   await saveRecord(recordPayload);
@@ -520,7 +668,7 @@ function setupProductAutocomplete(inputId, dropdownId, onSelect = null) {
           <span style="font-size: 11px; color: var(--text-muted); margin-left: 6px;">(${escapeHtml(p.category)})</span>
         </div>
         <span style="font-size: 11px; font-weight: 700; color: ${p.hasAllergen ? '#DC2626' : '#059669'};">
-          ${p.hasAllergen ? '⚠️ ' + escapeHtml(p.allergens.join(', ')) : '✓ Allergen Free'}
+          ${p.hasAllergen ? escapeHtml(p.allergens.join(', ')) : '✓ Allergen Free'}
         </span>
       </div>
     `).join('');

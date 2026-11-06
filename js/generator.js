@@ -40,7 +40,8 @@ export function getPreviousWorkingDate(dateStr) {
 
 /**
  * Generate production register entries for a given date string (YYYY-MM-DD).
- * Deterministic: same date produces exact same records across any reload.
+ * Ordered with latest entries at the TOP so that each entry's Previous Product
+ * is the entry directly BELOW it.
  */
 export function generateEntriesForDate(dateStr, isNested = false) {
   const d = new Date(dateStr + 'T12:00:00Z');
@@ -114,13 +115,15 @@ export function generateEntriesForDate(dateStr, isNested = false) {
     [selected[i], selected[j]] = [selected[j], selected[i]];
   }
 
-  // Previous product calculation: links smoothly from previous working day's last batch
+  // Previous product calculation for the earliest batch of the day
+  // (links to the latest batch of the previous working day)
   let prevProduct = 'JEERA POWDER';
   if (!isNested && dateStr > '2026-04-01') {
     const prevDate = getPreviousWorkingDate(dateStr);
     const prevEntries = generateEntriesForDate(prevDate, true);
     if (prevEntries && prevEntries.length) {
-      prevProduct = prevEntries[prevEntries.length - 1].productName;
+      // Since entries are returned latest-first, prevEntries[0] is yesterday's latest batch!
+      prevProduct = prevEntries[0].productName;
     }
   }
 
@@ -132,20 +135,25 @@ export function generateEntriesForDate(dateStr, isNested = false) {
   const dayChecker = rng() < 0.5 ? 'Vishal' : 'Tejas';
   const otherChecker = dayChecker === 'Vishal' ? 'Tejas' : 'Vishal';
 
-  return selected.map((prod, idx) => {
-    const curPrev = prevProduct;
-    prevProduct = prod.name.toUpperCase();
+  // 1. Build chronological sequence (morning batch to evening batch)
+  const chronological = [];
+  let curPrev = prevProduct;
+  for (let idx = 0; idx < selected.length; idx++) {
+    const prod = selected[idx];
     const batchNo = `${prod.code}-${mmyy}`;
     const checkedBy = (rng() < 0.82) ? dayChecker : otherChecker;
 
-    return {
+    // Clean allergen text without emoji
+    const cleanAllergen = prod.allergenText.replace(/^[⚠️!\s]+/, '');
+
+    chronological.push({
       id: `${dateStr}_${idx + 1}`,
       seq: idx + 1,
       date: formattedDate,
       dateISO: dateStr,
       productName: prod.name.toUpperCase(),
       batchNo: batchNo,
-      allergenPresent: prod.allergenText,
+      allergenPresent: cleanAllergen,
       hasAllergen: prod.hasAllergen,
       allergens: prod.allergens,
       category: prod.category,
@@ -155,7 +163,12 @@ export function generateEntriesForDate(dateStr, isNested = false) {
       crossContaminationCheck: 'Pass',
       checkedBy: checkedBy,
       isAuto: true
-    };
-  });
-}
+    });
 
+    curPrev = prod.name.toUpperCase();
+  }
+
+  // 2. Reverse so LATEST batch is at the TOP (Row 1):
+  // When latest is at top, Row 1's previous product is Row 2 (the row directly below it)!
+  return chronological.reverse();
+}

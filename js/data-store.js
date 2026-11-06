@@ -1,7 +1,7 @@
 // LV Spices — Data Store & Synchronizer
 // Merges deterministic auto-generated records with real-time Firebase Firestore overrides
 
-import { generateEntriesForDate } from './generator.js';
+import { generateEntriesForDate, getTodayDateISO } from './generator.js';
 import { 
   db, 
   collection, 
@@ -37,6 +37,9 @@ function saveLocalCache(cache) {
  * Get merged records for a single date (YYYY-MM-DD).
  */
 export async function getRecordsForDate(dateStr) {
+  const today = getTodayDateISO();
+  if (dateStr > today) return [];
+
   const baseEntries = generateEntriesForDate(dateStr);
   const cache = getLocalCache();
   const dateCache = cache[dateStr] || {};

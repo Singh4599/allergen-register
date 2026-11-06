@@ -29,6 +29,14 @@ export function getDayIndex(dateStr) {
   return Math.floor((target - base) / 86400000);
 }
 
+export function getTodayDateISO() {
+  const d = new Date();
+  const year = d.getFullYear();
+  const month = String(d.getMonth() + 1).padStart(2, '0');
+  const day = String(d.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
 export function getPreviousWorkingDate(dateStr) {
   let d = new Date(dateStr + 'T12:00:00Z');
   d.setUTCDate(d.getUTCDate() - 1);
@@ -42,8 +50,14 @@ export function getPreviousWorkingDate(dateStr) {
  * Generate production register entries for a given date string (YYYY-MM-DD).
  * Ordered with latest entries at the TOP so that each entry's Previous Product
  * is the entry directly BELOW it.
+ * Strictly blocks future dates past today.
  */
 export function generateEntriesForDate(dateStr, isNested = false) {
+  // Strict compliance: No records past today (records unlock daily)
+  const today = getTodayDateISO();
+  if (dateStr > today) return [];
+  if (dateStr < '2026-04-01') return [];
+
   const d = new Date(dateStr + 'T12:00:00Z');
   const dayOfWeek = d.getUTCDay();
   if (dayOfWeek === 0) return []; // Sunday = No production

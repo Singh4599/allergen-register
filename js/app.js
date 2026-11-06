@@ -64,7 +64,24 @@ document.addEventListener('DOMContentLoaded', () => {
 function initUI() {
   const hiddenPicker = document.getElementById('date-picker-hidden');
   const dateSelectorWrap = document.getElementById('date-selector-wrap');
-  if (hiddenPicker) hiddenPicker.value = state.currentDate;
+  const today = getTodayDateISO();
+
+  if (hiddenPicker) {
+    hiddenPicker.value = state.currentDate;
+    hiddenPicker.max = today;
+    hiddenPicker.min = '2026-04-01';
+  }
+
+  // Set max bounds on all date inputs
+  const fromDate = document.getElementById('print-from-date');
+  const toDate = document.getElementById('print-to-date');
+  const monthPicker = document.getElementById('print-month-picker');
+  const mDate = document.getElementById('m-date');
+
+  if (fromDate) { fromDate.max = today; fromDate.min = '2026-04-01'; }
+  if (toDate) { toDate.max = today; toDate.min = '2026-04-01'; }
+  if (monthPicker) { monthPicker.max = today.slice(0, 7); monthPicker.min = '2026-04'; }
+  if (mDate) { mDate.max = today; mDate.min = '2026-04-01'; }
 
   // Open native picker on click
   if (dateSelectorWrap && hiddenPicker) {
@@ -80,7 +97,14 @@ function initUI() {
 
     hiddenPicker.addEventListener('change', (e) => {
       if (e.target.value) {
-        loadDate(e.target.value);
+        const val = e.target.value;
+        if (val > today) {
+          showToast('Cannot select future date. Production register unlocks daily.', 'error');
+          hiddenPicker.value = today;
+          loadDate(today);
+        } else {
+          loadDate(val);
+        }
       }
     });
   }
@@ -92,12 +116,21 @@ function initUI() {
   });
 
   document.getElementById('btn-next-day').addEventListener('click', () => {
+    const today = getTodayDateISO();
+    if (state.currentDate >= today) {
+      showToast('Cannot navigate past today. New production records unlock daily.', 'info');
+      return;
+    }
     let d = new Date(state.currentDate + 'T12:00:00Z');
     d.setUTCDate(d.getUTCDate() + 1);
     while (d.getUTCDay() === 0) { // skip Sunday
       d.setUTCDate(d.getUTCDate() + 1);
     }
     const nextDate = d.toISOString().split('T')[0];
+    if (nextDate > today) {
+      showToast('Cannot navigate past today. New production records unlock daily.', 'info');
+      return;
+    }
     loadDate(nextDate);
   });
 
@@ -169,6 +202,12 @@ function initUI() {
 
 // ── LOAD DATE & SUBSCRIBE TO FIRESTORE ──
 async function loadDate(dateStr) {
+  const today = getTodayDateISO();
+  if (dateStr > today) {
+    showToast('Future dates cannot be accessed. Records unlock daily.', 'error');
+    dateStr = today;
+  }
+
   state.currentDate = dateStr;
   state.currentPage = 1;
 
@@ -177,6 +216,15 @@ async function loadDate(dateStr) {
 
   const dateText = document.getElementById('date-text-display');
   if (dateText) dateText.textContent = formatDateDisplay(dateStr);
+
+  // Update Next Day button state (disable if at today)
+  const nextBtn = document.getElementById('btn-next-day');
+  if (nextBtn) {
+    const isToday = (dateStr >= today);
+    nextBtn.disabled = isToday;
+    nextBtn.style.opacity = isToday ? '0.35' : '1';
+    nextBtn.style.cursor = isToday ? 'not-allowed' : 'pointer';
+  }
 
   if (state.unsubListener) {
     state.unsubListener();
@@ -301,17 +349,32 @@ function renderTable() {
 // ── PRINT REGISTER MODAL & DATE RANGE ──
 function openPrintModal() {
   const modal = document.getElementById('print-modal');
+  const today = getTodayDateISO();
   const dateDisplay = document.getElementById('print-modal-date-display');
   if (dateDisplay) dateDisplay.textContent = formatDateDisplay(state.currentDate);
 
-  // Set default range values
+  // Set default range values bounded to today
   const fromInput = document.getElementById('print-from-date');
   const toInput = document.getElementById('print-to-date');
   const monthInput = document.getElementById('print-month-picker');
 
-  if (fromInput) fromInput.value = state.currentDate;
-  if (toInput) toInput.value = state.currentDate;
-  if (monthInput) monthInput.value = state.currentDate.slice(0, 7);
+  const safeCurrent = state.currentDate > today ? today : state.currentDate;
+
+  if (fromInput) {
+    fromInput.value = safeCurrent;
+    fromInput.max = today;
+    fromInput.min = '2026-04-01';
+  }
+  if (toInput) {
+    toInput.value = safeCurrent;
+    toInput.max = today;
+    toInput.min = '2026-04-01';
+  }
+  if (monthInput) {
+    monthInput.value = safeCurrent.slice(0, 7);
+    monthInput.max = today.slice(0, 7);
+    monthInput.min = '2026-04';
+  }
 
   document.getElementById('scope-single').checked = true;
   updatePrintScopeUI();
@@ -337,17 +400,29 @@ async function executePrintRange() {
   const selectedScope = document.querySelector('input[name="print-scope"]:checked')?.value || 'single';
   const padRows = document.getElementById('print-pad-rows')?.checked;
   const printSheet = document.getElementById('printable-register-sheet');
+  const today = getTodayDateISO();
 
   let datesToPrint = [];
 
   if (selectedScope === 'single') {
+    if (state.currentDate > today) {
+      showToast('Cannot print future date. Records unlock daily.', 'error');
+      return;
+    }
     datesToPrint = [state.currentDate];
   } else if (selectedScope === 'range') {
-    const fromDateStr = document.getElementById('print-from-date')?.value;
-    const toDateStr = document.getElementById('print-to-date')?.value;
+    let fromDateStr = document.getElementById('print-from-date')?.value;
+    let toDateStr = document.getElementById('print-to-date')?.value;
     if (!fromDateStr || !toDateStr) {
       showToast('Please select both From Date and To Date', 'error');
       return;
+    }
+    if (fromDateStr > today) {
+      showToast('From Date cannot be in the future', 'error');
+      return;
+    }
+    if (toDateStr > today) {
+      toDateStr = today;
     }
     if (fromDateStr > toDateStr) {
       showToast('From Date cannot be after To Date', 'error');
@@ -357,8 +432,10 @@ async function executePrintRange() {
     let cur = new Date(fromDateStr + 'T12:00:00Z');
     const end = new Date(toDateStr + 'T12:00:00Z');
     while (cur <= end) {
+      const curStr = cur.toISOString().split('T')[0];
+      if (curStr > today) break;
       if (cur.getUTCDay() !== 0) { // skip Sundays
-        datesToPrint.push(cur.toISOString().split('T')[0]);
+        datesToPrint.push(curStr);
       }
       cur.setUTCDate(cur.getUTCDate() + 1);
     }
@@ -372,6 +449,7 @@ async function executePrintRange() {
     const daysInMonth = new Date(y, m, 0).getDate();
     for (let day = 1; day <= daysInMonth; day++) {
       const dStr = `${y}-${String(m).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
+      if (dStr > today) break; // Strict: stop at today, do not print future dates of this month
       const d = new Date(dStr + 'T12:00:00Z');
       if (d.getUTCDay() !== 0) { // skip Sundays
         datesToPrint.push(dStr);
@@ -379,8 +457,11 @@ async function executePrintRange() {
     }
   }
 
+  // Safety filter
+  datesToPrint = datesToPrint.filter(d => d <= today && d >= '2026-04-01');
+
   if (!datesToPrint.length) {
-    showToast('No working dates found in the selected range', 'error');
+    showToast('No production dates found up to today', 'error');
     return;
   }
 
@@ -534,6 +615,13 @@ function exportToExcel() {
 function openRecordModal(recordId = null) {
   const modal = document.getElementById('record-modal');
   const title = document.getElementById('modal-title');
+  const today = getTodayDateISO();
+  const dateInput = document.getElementById('m-date');
+  if (dateInput) {
+    dateInput.max = today;
+    dateInput.min = '2026-04-01';
+  }
+
   const [yearStr, monthStr, dayStr] = state.currentDate.split('-');
   const mmyy = `${monthStr}${yearStr.slice(-2)}`;
 
@@ -561,7 +649,8 @@ function openRecordModal(recordId = null) {
     // New Record: Added to TOP, so its previous product is the current top row!
     title.textContent = 'Add New Production Record';
     document.getElementById('m-record-id').value = '';
-    document.getElementById('m-date').value = state.currentDate;
+    const safeDate = state.currentDate > today ? today : state.currentDate;
+    document.getElementById('m-date').value = safeDate;
     document.getElementById('m-batch-no').value = `NEW-${mmyy}`;
     document.getElementById('m-product-name').value = '';
     document.getElementById('m-has-allergen').value = 'no';
@@ -597,8 +686,18 @@ window.closeModal = function() {
 };
 
 async function handleSaveRecord() {
-  const recordId = document.getElementById('m-record-id').value || `${state.currentDate}_manual_${Date.now()}`;
   const dateISO = document.getElementById('m-date').value;
+  const today = getTodayDateISO();
+  if (dateISO > today) {
+    showToast('Cannot save record for a future date. Production records unlock daily.', 'error');
+    return;
+  }
+  if (dateISO < '2026-04-01') {
+    showToast('Date must be from April 2026 onwards.', 'error');
+    return;
+  }
+
+  const recordId = document.getElementById('m-record-id').value || `${state.currentDate}_manual_${Date.now()}`;
   const [yearStr, monthStr, dayStr] = dateISO.split('-');
   const formattedDate = `${dayStr}/${monthStr}/${yearStr.slice(-2)}`;
 
